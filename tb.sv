@@ -11,7 +11,7 @@ xw_if #(16,16) x_if (.clk(clk));
 xw_if #(16,16) w_if (.clk(clk));
 
 //legam testul de interfata
-test_sif t0 (x_if, x_if);
+test_sif t0 (x_if, x_if, w_if);
 
 
 assign x_if.rst_b = rst;
