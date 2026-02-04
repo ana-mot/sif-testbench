@@ -6,16 +6,31 @@ import environment_pkg::*;
     Monitor mon_x, mon_w;
     Driver drv;
     Transaction tr;
+    Generator gen;
+
+    mailbox drv_mbx;
+    event drv_done;
 
 
   initial begin
+    drv_mbx = new();
+
     mon_x = new(xm);
     mon_w = new(wm);
     drv = new(x);
+    gen = new();
+
+    gen.drv_mbx = drv_mbx;
+    drv.drv_mbx = drv_mbx;
+
+    gen.drv_done = drv_done;
+    drv.drv_done = drv_done;
+
     fork
+      gen.run();
+      drv.run();
       mon_x.run();
       mon_w.run();
-      drv.run();
     join_none
 
     
