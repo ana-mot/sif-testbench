@@ -7,18 +7,25 @@ import environment_pkg::*;
     Driver drv;
     Transaction tr;
     Generator gen;
+    Scoreboard scb;
 
     mailbox drv_mbx;
     event drv_done;
 
+    mailbox x_msg_mbx, x_actual_mbx, w_actual_mbx;
 
   initial begin
     drv_mbx = new();
+    x_msg_mbx = new();
+    x_actual_mbx = new();
+    w_actual_mbx = new();
 
-    mon_x = new(xm);
-    mon_w = new(wm);
+    mon_x = new(xm, "X_IF",x_msg_mbx, x_actual_mbx);
+    mon_w = new(wm, "W_IF", null, w_actual_mbx);
+
     drv = new(x);
     gen = new();
+    scb = new(x_msg_mbx, x_actual_mbx, w_actual_mbx);
 
     gen.drv_mbx = drv_mbx;
     drv.drv_mbx = drv_mbx;
@@ -31,6 +38,7 @@ import environment_pkg::*;
       drv.run();
       mon_x.run();
       mon_w.run();
+      scb.run();
     join_none
 
     

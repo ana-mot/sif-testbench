@@ -5,5 +5,6 @@ package environment_pkg;
     `include "generator.svh"
     `include "driver.svh"
     `include "monitor.svh"
+    `include "scoreboard.svh"
 endpackage
 

@@ -1,9 +1,15 @@
 class Monitor;
     virtual xw_if.MONITOR vif;
     Transaction tr;
+    string name;
+    mailbox msg_mbx; //pentru ref_dut(doar X)
+    mailbox actual_mbx; //pt comparator(X sau W)
 
-    function new(virtual xw_if.MONITOR vif);
+    function new(virtual xw_if.MONITOR vif, string name = "MON", mailbox msg_mbx, mailbox actual_mbx);
         this.vif = vif;
+        this.name = name;
+        this.msg_mbx = msg_mbx;
+        this.actual_mbx = actual_mbx;
     endfunction //new()
     
     task run();
@@ -16,15 +22,22 @@ class Monitor;
 
         if (vif.cbm.wr_s) begin
             tr.d = WRITE;
-            tr.data = vif.cbm.data_wr;
-            tr.display(); 
+            tr.data = vif.cbm.data_wr; 
+            $display("@%0t WRITE pe [%s]", $time, name);
+            tr.display();
+
+            if (msg_mbx != null) msg_mbx.put(tr); //x msg merge la ref_dut
+            actual_mbx.put(tr); //merge la comparator
         end
 
         if (vif.cbm.rd_s) begin
             tr.d = READ;
             @(vif.cbm);           
             tr.data = vif.cbm.data_rd;
+            $display("@%0t READ pe [%s]", $time, name);
             tr.display();
+            if (msg_mbx != null) msg_mbx.put(tr); 
+            actual_mbx.put(tr); ////merge la comparator
         end
 
         
@@ -33,24 +46,3 @@ class Monitor;
     endtask
     
 endclass //Monitor()
-
- /* 
-        if (vif.cbm.wr_s) begin
-            //$display("@%0t A fost ceruta o scriere la adresa=%h si data=%h", $time, vif.cbm.addr, vif.cbm.data_wr);
-            tr = new();
-            tr.addr = vif.cbm.addr;
-            tr.data = vif.cbm.data_wr;
-            tr.d = WRITE;
-            tr.display();
-        end
-
-        if (vif.cbm.rd_s) begin
-            //$display("@%0t A fost ceruta citirea pentru adresa=%h", $time, vif.cbm.addr);
-            tr = new();
-            tr.addr = vif.cbm.addr;
-            tr.d = READ;
-            @(vif.cbm);
-            tr.data = vif.cbm.data_rd;
-            //$display("@%0t Data returnata este data=%h", $time, vif.cbm.data_rd);
-            tr.display();
-        end*/

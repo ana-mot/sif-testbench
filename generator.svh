@@ -4,11 +4,13 @@ class Generator;
 
    task run();
     Transaction tr;
-    tr = new();
-    tr.randomize();
-    $display ("T=%0t [Generator] created an item d=%s addr=%h data=%h", $time, tr.d.name(), tr.addr, tr.data);
-    drv_mbx.put(tr);
-    @(drv_done);
+    repeat(3) begin
+      tr = new();
+      tr.randomize();
+      $display ("T=%0t [Generator] created an item d=%s addr=%h data=%h", $time, tr.d.name(), tr.addr, tr.data);
+      drv_mbx.put(tr);
+      @(drv_done);
+    end
    endtask
 endclass //Generator
 
