@@ -1,5 +1,5 @@
 sif.sv
+rst_interface.sv
 interface.sv
-tb.sv
 environment_pkg.sv
-test.sv
+tb.sv

@@ -7,8 +7,8 @@ vsim -voptargs="+acc" +UVM_VERBOSITY=UVM_MEDIUM work.tb_sif
 
 onerror {resume}
 quietly WaveActivateNextPane {} 0
-add wave -noupdate /tb_sif/rst
 add wave -noupdate /tb_sif/clk
+add wave -noupdate /tb_sif/r_if/rst_b
 add wave -noupdate /tb_sif/x_if/wr_s
 add wave -noupdate /tb_sif/x_if/rd_s
 add wave -noupdate /tb_sif/x_if/addr

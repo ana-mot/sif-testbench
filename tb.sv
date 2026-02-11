@@ -1,25 +1,26 @@
 `timescale 1ps/1ps
 
+`include "test.svh"
+
 module tb_sif;
 
-
-reg rst;
 reg clk; 
+
+//interfata pt reset
+reset_if r_if(.clk(clk));
 
 //2 instante de interfata: X si W
 xw_if #(16,16) x_if (.clk(clk));
 xw_if #(16,16) w_if (.clk(clk));
 
-//legam testul de interfata
-test_sif t0 (x_if, x_if, w_if);
+BaseTest t;
 
-
-assign x_if.rst_b = rst;
-assign w_if.rst_b = rst;
+assign x_if.rst_b = r_if.rst_b;
+assign w_if.rst_b = r_if.rst_b;
 
   // DUT
   sif dut (
-    .rst_b(rst),
+    .rst_b(r_if.rst_b),
     .clk(clk),
     .xa_wr_s(x_if.wr_s),
     .xa_rd_s(x_if.rd_s),
@@ -36,20 +37,31 @@ assign w_if.rst_b = rst;
     forever #5 clk = ~clk;
   end
 
-
-
   initial begin
     //init
-    rst = 1'b0;
+    r_if.rst_b = 1'b0;
     x_if.wr_s = 1'b0;
     x_if.rd_s = 1'b0;
     x_if.addr = '0;
     x_if.data_wr = '0;
 
-
     //reset
     repeat (2) @(posedge clk);
-    rst = 1;
+    r_if.rst_b = 1'b1;
+
+    wait (r_if.rst_b == 1'b1);
+    t = new(x_if, x_if, w_if);
+    t.run();
+  end
+
+  initial begin
+    wait (r_if.rst_b == 1'b1);
+
+    repeat ($urandom_range(5,10)) @(posedge clk);
+    r_if.rst_b = 1'b0;
+    repeat ($urandom_range(1,3)) @(posedge clk);
+    r_if.rst_b = 1'b1;
+
   end
 
 endmodule
