@@ -7,6 +7,9 @@ class BaseTest;
   virtual xw_if.TB x;
   virtual xw_if.MONITOR xm;
   virtual xw_if.MONITOR wm;
+  virtual reset_if r_if;
+
+  bit enable_rst = 1'b0;
 
   Monitor mon_x, mon_w;
   Driver drv;
@@ -19,11 +22,21 @@ class BaseTest;
 
   mailbox x_msg_mbx, x_actual_mbx, w_actual_mbx;
 
-  function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm);
+  function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
     this.x  = x;
     this.xm = xm;
     this.wm = wm;
+    this.r_if = r_if;
   endfunction
+
+  task reset_run();
+     wait (r_if.rst_b == 1'b1);
+
+    repeat ($urandom_range(5,10))@(posedge x.cbd);
+    r_if.rst_b = 1'b0;
+    repeat ($urandom_range(1,3)) @(posedge x.cbd);
+    r_if.rst_b = 1'b1; 
+  endtask
 
   task run();
     drv_mbx = new();
@@ -36,6 +49,10 @@ class BaseTest;
 
     drv = new(x);
     gen = new();
+
+    gen.max_delay = 8;
+    gen.delay_mode = NO_DELAY;  
+
     scb = new(x_msg_mbx, x_actual_mbx, w_actual_mbx);
 
     gen.drv_mbx = drv_mbx;
@@ -50,10 +67,12 @@ class BaseTest;
       mon_x.run();
       mon_w.run();
       scb.run();
+
+      if(enable_rst) reset_run();
     join_none
 
     
-    repeat (20) @(x.cbd);
+    repeat (50) @(x.cbd);
     $finish;
   endtask
 

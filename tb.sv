@@ -50,11 +50,12 @@ assign w_if.rst_b = r_if.rst_b;
     r_if.rst_b = 1'b1;
 
     wait (r_if.rst_b == 1'b1);
-    t = new(x_if, x_if, w_if);
+    t = new(x_if, x_if, w_if, r_if);
+    t.enable_rst = 1'b1;
     t.run();
   end
 
-  initial begin
+  /*initial begin
     wait (r_if.rst_b == 1'b1);
 
     repeat ($urandom_range(5,10)) @(posedge clk);
@@ -62,7 +63,7 @@ assign w_if.rst_b = r_if.rst_b;
     repeat ($urandom_range(1,3)) @(posedge clk);
     r_if.rst_b = 1'b1;
 
-  end
+  end*/
 
 endmodule
 
