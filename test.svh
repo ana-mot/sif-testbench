@@ -16,6 +16,7 @@ class BaseTest;
   Transaction tr;
   Generator gen;
   Scoreboard scb;
+  Configuration cfg;
 
   mailbox drv_mbx;
   event drv_done;
@@ -38,6 +39,12 @@ class BaseTest;
     r_if.rst_b = 1'b1; 
   endtask
 
+  virtual function void configure();
+    cfg.max_delay  = 0;
+    cfg.delay_mode = NO_DELAY;
+    enable_rst = 1'b0;
+  endfunction
+
   task run();
     drv_mbx = new();
     x_msg_mbx = new();
@@ -47,13 +54,13 @@ class BaseTest;
     mon_x = new(xm, "X_IF",x_msg_mbx, x_actual_mbx);
     mon_w = new(wm, "W_IF", null, w_actual_mbx);
 
+    cfg = new();
     drv = new(x);
-    gen = new();
-
-    gen.max_delay = 8;
-    gen.delay_mode = NO_DELAY;  
+    gen = new(cfg);
 
     scb = new(x_msg_mbx, x_actual_mbx, w_actual_mbx);
+
+    configure();
 
     gen.drv_mbx = drv_mbx;
     drv.drv_mbx = drv_mbx;
@@ -73,7 +80,49 @@ class BaseTest;
 
     
     repeat (50) @(x.cbd);
+    -> scb.done_p; 
+    repeat (10) @(x.cbd); 
     $finish;
   endtask
 
+endclass
+
+// ------------------------------------------------------------
+
+class SanityTest extends BaseTest;
+  function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
+    super.new(x, xm, wm, r_if);
+  endfunction
+
+  virtual function void configure();
+    cfg.delay_mode = MAX_DELAY;
+    enable_rst = 1'b0;
+  endfunction
+endclass
+
+// ------------------------------------------------------------
+class StresTest extends BaseTest;
+  function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
+    super.new(x, xm, wm, r_if);
+  endfunction
+
+  virtual function void configure();
+    cfg.delay_mode = NO_DELAY;
+    cfg.max_delay = 0;
+    enable_rst = 1'b0;
+  endfunction
+endclass
+
+
+// ------------------------------------------------------------
+class ResetTest extends BaseTest;
+  function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
+    super.new(x, xm, wm, r_if);
+  endfunction
+
+  virtual function void configure();
+    cfg.delay_mode = MAX_DELAY;
+    cfg.max_delay  = 5;
+    enable_rst = 1'b1;
+  endfunction
 endclass

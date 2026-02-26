@@ -51,19 +51,22 @@ assign w_if.rst_b = r_if.rst_b;
 
     wait (r_if.rst_b == 1'b1);
     t = new(x_if, x_if, w_if, r_if);
-    t.enable_rst = 1'b1;
+    //t.enable_rst = 1'b1;
     t.run();
+
+    /*wait (r_if.rst_b == 1'b1);
+    $display ("T=%0t SANITY starting ...", $time);
+    t = SanityTest::new(x_if, x_if, w_if, r_if);
+    t.run();
+
+    $display ("T=%0t STRES starting ...", $time);
+    t = StresTest::new(x_if, x_if, w_if, r_if);
+    t.run();
+
+    $display ("T=%0t RESET starting ...", $time);
+    t = ResetTest::new(x_if, x_if, w_if, r_if);
+    t.run();*/
   end
-
-  /*initial begin
-    wait (r_if.rst_b == 1'b1);
-
-    repeat ($urandom_range(5,10)) @(posedge clk);
-    r_if.rst_b = 1'b0;
-    repeat ($urandom_range(1,3)) @(posedge clk);
-    r_if.rst_b = 1'b1;
-
-  end*/
 
 endmodule
 

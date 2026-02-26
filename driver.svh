@@ -15,31 +15,27 @@ task run();
     forever begin
         
         $display ("T=%0t [Driver] waiting for item ...", $time);
-        drv_mbx.get(tr);
 	    
 
-        @ (vif.cbd);
-        vif.cbd.wr_s <= 1'b0;
-        vif.cbd.rd_s <= 1'b0;
-
         wait (vif.cbd.rst_b == 1'b1);
+        drv_mbx.get(tr);
 
         if (tr.d == WRITE) begin
             vif.cbd.wr_s <= 1'b1;
             vif.cbd.addr <= tr.addr;
             vif.cbd.data_wr <= tr.data;
 
-            /*@(vif.cbd);
-            vif.cbd.wr_s <= 1'b0;*/
         end
 
         if (tr.d == READ) begin 
             vif.cbd.rd_s <= 1'b1;
             vif.cbd.addr <= tr.addr;
 
-            /*@(vif.cbd);
-            vif.cbd.rd_s <= 1'b0;*/
         end
+
+        @(vif.cbd);
+            vif.cbd.wr_s <= 1'b0;
+            vif.cbd.rd_s <= 1'b0;
         ->drv_done;
     end
 endtask
