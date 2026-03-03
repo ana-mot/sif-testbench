@@ -38,34 +38,9 @@ assign w_if.rst_b = r_if.rst_b;
   end
 
   initial begin
-    //init
-    r_if.rst_b = 1'b0;
-    x_if.wr_s = 1'b0;
-    x_if.rd_s = 1'b0;
-    x_if.addr = '0;
-    x_if.data_wr = '0;
-
-    //reset
-    repeat (2) @(posedge clk);
-    r_if.rst_b = 1'b1;
-
-    wait (r_if.rst_b == 1'b1);
-    t = new(x_if, x_if, w_if, r_if);
-    //t.enable_rst = 1'b1;
-    t.run();
-
-    /*wait (r_if.rst_b == 1'b1);
-    $display ("T=%0t SANITY starting ...", $time);
-    t = SanityTest::new(x_if, x_if, w_if, r_if);
-    t.run();
-
-    $display ("T=%0t STRES starting ...", $time);
     t = StresTest::new(x_if, x_if, w_if, r_if);
+    //t = new(x_if, x_if, w_if, r_if);
     t.run();
-
-    $display ("T=%0t RESET starting ...", $time);
-    t = ResetTest::new(x_if, x_if, w_if, r_if);
-    t.run();*/
   end
 
 endmodule

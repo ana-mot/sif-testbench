@@ -20,6 +20,7 @@ class BaseTest;
 
   mailbox drv_mbx;
   event drv_done;
+  event gen_done;
 
   mailbox x_msg_mbx, x_actual_mbx, w_actual_mbx;
 
@@ -29,6 +30,25 @@ class BaseTest;
     this.wm = wm;
     this.r_if = r_if;
   endfunction
+
+  task init();
+    x.cbd.wr_s <= 1'b0;
+    x.cbd.rd_s <= 1'b0;
+    x.cbd.addr <= '0;
+    x.cbd.data_wr <= '0;
+  endtask
+
+  task initial_reset();
+    r_if.rst_b <= 1'b0;
+    init();
+
+    repeat (2) @(posedge x.cbd);
+
+    r_if.rst_b <= 1'b1;
+    wait (r_if.rst_b == 1'b1);
+
+    @(posedge x.cbd);
+  endtask
 
   task reset_run();
      wait (r_if.rst_b == 1'b1);
@@ -40,8 +60,8 @@ class BaseTest;
   endtask
 
   virtual function void configure();
-    cfg.max_delay  = 0;
-    cfg.delay_mode = NO_DELAY;
+    cfg.max_delay  = 5;
+    cfg.delay_mode = MAX_DELAY;
     enable_rst = 1'b0;
   endfunction
 
@@ -56,11 +76,14 @@ class BaseTest;
 
     cfg = new();
     drv = new(x);
-    gen = new(cfg);
+    gen = new(cfg, x);
+    gen.gen_done = gen_done;
 
     scb = new(x_msg_mbx, x_actual_mbx, w_actual_mbx);
 
     configure();
+
+    initial_reset();
 
     gen.drv_mbx = drv_mbx;
     drv.drv_mbx = drv_mbx;
@@ -79,9 +102,10 @@ class BaseTest;
     join_none
 
     
-    repeat (50) @(x.cbd);
-    -> scb.done_p; 
-    repeat (10) @(x.cbd); 
+    @gen_done;
+    repeat (5) @(x.cbd);
+    -> scb.done_p;
+    repeat (5) @(x.cbd);
     $finish;
   endtask
 
@@ -122,7 +146,9 @@ class ResetTest extends BaseTest;
 
   virtual function void configure();
     cfg.delay_mode = MAX_DELAY;
-    cfg.max_delay  = 5;
+    cfg.max_delay = 5;
     enable_rst = 1'b1;
   endfunction
 endclass
+
+
