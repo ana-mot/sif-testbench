@@ -38,7 +38,7 @@ assign w_if.rst_b = r_if.rst_b;
   end
 
   initial begin
-    t = StresTest::new(x_if, x_if, w_if, r_if);
+    t = ResetTest::new(x_if, x_if, w_if, r_if);
     //t = new(x_if, x_if, w_if, r_if);
     t.run();
   end

@@ -38,6 +38,17 @@ class Generator;
           end
         end
 
+        MIXT: begin
+          if ($urandom_range(0,1) == 0) begin
+            pause = 0;
+          end else begin
+            pause = $urandom_range(1, cfg.max_delay);
+          end
+          
+          $display("T=%0t [Generator] mixed pause=%0d cycles", $time, pause);
+          repeat(pause) @(vif.cbd);
+        end
+
       endcase
     end
     -> gen_done;

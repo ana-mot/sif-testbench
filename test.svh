@@ -10,6 +10,7 @@ class BaseTest;
   virtual reset_if r_if;
 
   bit enable_rst = 1'b0;
+  bit enable_gen = 1'b1;
 
   Monitor mon_x, mon_w;
   Driver drv;
@@ -42,30 +43,38 @@ class BaseTest;
     r_if.rst_b <= 1'b0;
     init();
 
-    repeat (2) @(posedge x.cbd);
+    repeat (2) @(x.cbd);
 
     r_if.rst_b <= 1'b1;
     wait (r_if.rst_b == 1'b1);
 
-    @(posedge x.cbd);
+    @(x.cbd);
   endtask
 
   task reset_run();
-     wait (r_if.rst_b == 1'b1);
+  int n_resets;
+    wait (r_if.rst_b == 1'b1);
 
-    repeat ($urandom_range(5,10))@(posedge x.cbd);
-    r_if.rst_b = 1'b0;
-    repeat ($urandom_range(1,3)) @(posedge x.cbd);
-    r_if.rst_b = 1'b1; 
+    n_resets = $urandom_range(1, 5);
+
+    repeat (n_resets) begin
+      repeat ($urandom_range(5, 10)) @(x.cbd);
+
+      r_if.rst_b <= 1'b0;
+      repeat ($urandom_range(1, 3)) @(x.cbd);
+      r_if.rst_b <= 1'b1;
+    end
+
   endtask
 
   virtual function void configure();
     cfg.max_delay  = 5;
     cfg.delay_mode = MAX_DELAY;
     enable_rst = 1'b0;
+    enable_gen = 1'b1;
   endfunction
 
-  task run();
+  virtual task run();
     drv_mbx = new();
     x_msg_mbx = new();
     x_actual_mbx = new();
@@ -73,7 +82,7 @@ class BaseTest;
 
     mon_x = new(xm, "X_IF",x_msg_mbx, x_actual_mbx);
     mon_w = new(wm, "W_IF", null, w_actual_mbx);
-
+    
     cfg = new();
     drv = new(x);
     gen = new(cfg, x);
@@ -92,8 +101,8 @@ class BaseTest;
     drv.drv_done = drv_done;
 
     fork
-      gen.run();
-      drv.run();
+      if (enable_gen) gen.run();
+      if (enable_gen) drv.run();
       mon_x.run();
       mon_w.run();
       scb.run();
@@ -102,11 +111,13 @@ class BaseTest;
     join_none
 
     
-    @gen_done;
-    repeat (5) @(x.cbd);
-    -> scb.done_p;
-    repeat (5) @(x.cbd);
-    $finish;
+    if (enable_gen) begin
+      @gen_done;
+      repeat (5) @(x.cbd);
+      -> scb.done_p;
+      repeat (5) @(x.cbd);
+      $finish;
+    end 
   endtask
 
 endclass
@@ -121,6 +132,7 @@ class SanityTest extends BaseTest;
   virtual function void configure();
     cfg.delay_mode = MAX_DELAY;
     enable_rst = 1'b0;
+    enable_gen = 1'b1;
   endfunction
 endclass
 
@@ -134,6 +146,7 @@ class StresTest extends BaseTest;
     cfg.delay_mode = NO_DELAY;
     cfg.max_delay = 0;
     enable_rst = 1'b0;
+    enable_gen = 1'b1;
   endfunction
 endclass
 
@@ -148,7 +161,152 @@ class ResetTest extends BaseTest;
     cfg.delay_mode = MAX_DELAY;
     cfg.max_delay = 5;
     enable_rst = 1'b1;
+    enable_gen = 1'b1;
   endfunction
 endclass
 
+// ------------------------------------------------------------
+class TrafficMixtTest extends BaseTest;
+  function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
+    super.new(x, xm, wm, r_if);
+  endfunction
+
+  virtual function void configure();
+    cfg.delay_mode = MIXT;
+    cfg.max_delay = 5;
+    enable_rst = 1'b1;
+    enable_gen = 1'b1;
+  endfunction
+endclass
+
+
+
+// ------------------------------------------------------------
+class ManualTest extends BaseTest;
+
+  rand logic [15:0] rand_addr;
+  rand logic [15:0] rand_data;
+
+  function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
+    super.new(x, xm, wm, r_if);
+  endfunction
+
+  task consecutive_reads();
+    if (!randomize()) $fatal(1, "Randomize failed");
+    $display("Citiri consecutive");
+    @(x.cbd);
+    x.cbd.addr <= rand_addr;
+    x.cbd.rd_s <= 1'b1;
+    x.cbd.wr_s <= 1'b0;
+    @(x.cbd);
+    x.cbd.addr <= rand_addr;
+    x.cbd.rd_s <= 1'b1;
+    x.cbd.wr_s <= 1'b0;
+    @(x.cbd);
+    x.cbd.addr <= rand_addr;
+    x.cbd.rd_s <= 1'b1;
+    x.cbd.wr_s <= 1'b0;
+    @(x.cbd);
+    x.cbd.rd_s <= 1'b0;
+  endtask //consecutive reads
+
+  task rd_wr_simultan();
+    if (!randomize()) $fatal(1, "Randomize failed");
+    $display("O citire si o scriere in acelasi timp");
+    @(x.cbd);
+    x.cbd.addr <= rand_addr;
+    x.cbd.data_wr <= rand_data;
+    x.cbd.rd_s <= 1'b1;
+    x.cbd.wr_s <= 1'b1;
+    @(x.cbd);
+    x.cbd.rd_s <= 1'b0;
+    x.cbd.wr_s <= 1'b0;
+  endtask //rd_wr_simultan
+
+  task reset_read();
+    if (!randomize()) $fatal(1, "Randomize failed");
+    $display("Reset simultan cu o citire");
+    r_if.rst_b <= 1'b0;
+
+    @(x.cbd);
+    x.cbd.addr <= rand_addr;
+    x.cbd.rd_s <= 1'b1;
+    x.cbd.wr_s <= 1'b0;
+    @(x.cbd);
+    x.cbd.rd_s <= 1'b0;
+
+    @(x.cbd);
+    r_if.rst_b <= 1'b1;
+    @(x.cbd);
+  endtask
+
+  task reset_write();
+    if (!randomize()) $fatal(1, "Randomize failed");
+    $display("Reset simultan cu o scriere");
+    r_if.rst_b <= 1'b0;
+
+    @(x.cbd);
+    x.cbd.addr <= rand_addr;
+    x.cbd.data_wr <= rand_data;
+    x.cbd.rd_s <= 1'b0;
+    x.cbd.wr_s <= 1'b1;
+    @(x.cbd);
+    x.cbd.wr_s <= 1'b0;
+
+    @(x.cbd);
+    r_if.rst_b <= 1'b1;
+    @(x.cbd);
+  endtask
+  
+  task reset_with_rd_wr();
+    if (!randomize()) $fatal(1, "Randomize failed");
+    $display("Reset simultan cu o scriere si o citire");
+    r_if.rst_b <= 1'b0;
+
+    @(x.cbd);
+    x.cbd.addr <= rand_addr;
+    x.cbd.data_wr <= rand_data;
+    x.cbd.rd_s <= 1'b1;
+    x.cbd.wr_s <= 1'b1;
+    @(x.cbd);
+    x.cbd.wr_s <= 1'b0;
+    x.cbd.rd_s <= 1'b0;
+
+    @(x.cbd);
+    r_if.rst_b <= 1'b1;
+    @(x.cbd);
+  endtask
+
+  virtual function void configure();
+    super.configure();
+    enable_gen = 1'b0;
+    enable_rst = 1'b0;
+  endfunction
+
+  task run();
+    super.run(); 
+      
+    wait (r_if.rst_b == 1'b1);
+    repeat (2) @(x.cbd);
+
+    consecutive_reads();
+    repeat (3) @(x.cbd);
+
+    rd_wr_simultan();
+    repeat (5) @(x.cbd);
+
+    reset_read();
+    repeat (3) @(x.cbd);
+
+    reset_write();
+    repeat (3) @(x.cbd);
+
+    reset_with_rd_wr();
+    repeat (10) @(x.cbd);
+
+    -> scb.done_p;
+    repeat (5) @(x.cbd);
+    $finish;
+  endtask
+endclass
 
