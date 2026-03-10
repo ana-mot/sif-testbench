@@ -2,3 +2,4 @@ transcript
 vsim_stacktrace.vstf
 vsim.wlf
 work/*
+covhtmlreport/*

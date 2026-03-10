@@ -2,8 +2,9 @@
 transcript file ""
 transcript file transcript
 
-vlog -sv -f filelist.f
-vsim -voptargs="+acc" +UVM_VERBOSITY=UVM_MEDIUM work.tb_sif
+
+vlog +cover=f -sv -f filelist.f
+vsim -voptargs="+acc" -coverage +UVM_VERBOSITY=UVM_MEDIUM work.tb_sif
 
 onerror {resume}
 quietly WaveActivateNextPane {} 0
@@ -37,3 +38,5 @@ update
 WaveRestoreZoom {0 ps} {121 ps}
 
 run -all
+
+coverage report -html -htmldir covhtmlreport -details -assert -directive -cvg -code bcefst -threshL 50 -threshH 90

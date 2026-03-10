@@ -18,12 +18,14 @@ class BaseTest;
   Generator gen;
   Scoreboard scb;
   Configuration cfg;
+  Coverage cov;
 
   mailbox drv_mbx;
   event drv_done;
   event gen_done;
 
   mailbox x_msg_mbx, x_actual_mbx, w_actual_mbx;
+
 
   function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
     this.x  = x;
@@ -52,12 +54,9 @@ class BaseTest;
   endtask
 
   task reset_run();
-  int n_resets;
     wait (r_if.rst_b == 1'b1);
 
-    n_resets = $urandom_range(1, 5);
-
-    repeat (n_resets) begin
+    repeat (cfg.n_resets) begin
       repeat ($urandom_range(5, 10)) @(x.cbd);
 
       r_if.rst_b <= 1'b0;
@@ -68,8 +67,7 @@ class BaseTest;
   endtask
 
   virtual function void configure();
-    cfg.max_delay  = 5;
-    cfg.delay_mode = MAX_DELAY;
+    cfg.randomize();
     enable_rst = 1'b0;
     enable_gen = 1'b1;
   endfunction
@@ -82,6 +80,8 @@ class BaseTest;
 
     mon_x = new(xm, "X_IF",x_msg_mbx, x_actual_mbx);
     mon_w = new(wm, "W_IF", null, w_actual_mbx);
+
+    cov = new(xm);
     
     cfg = new();
     drv = new(x);
@@ -106,7 +106,7 @@ class BaseTest;
       mon_x.run();
       mon_w.run();
       scb.run();
-
+      cov.run();
       if(enable_rst) reset_run();
     join_none
 
@@ -130,7 +130,7 @@ class SanityTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    cfg.delay_mode = MAX_DELAY;
+    cfg.randomize() with { delay_mode == MAX_DELAY; };
     enable_rst = 1'b0;
     enable_gen = 1'b1;
   endfunction
@@ -143,8 +143,8 @@ class StresTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    cfg.delay_mode = NO_DELAY;
-    cfg.max_delay = 0;
+    cfg.randomize() with { delay_mode == NO_DELAY;
+                           max_delay == 0; };
     enable_rst = 1'b0;
     enable_gen = 1'b1;
   endfunction
@@ -158,8 +158,8 @@ class ResetTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    cfg.delay_mode = MAX_DELAY;
-    cfg.max_delay = 5;
+    cfg.randomize() with { delay_mode == MAX_DELAY;
+                           max_delay == 5; };
     enable_rst = 1'b1;
     enable_gen = 1'b1;
   endfunction
@@ -172,8 +172,9 @@ class TrafficMixtTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    cfg.delay_mode = MIXT;
-    cfg.max_delay = 5;
+    cfg.randomize() with { delay_mode == MIXT;
+                           max_delay == 4;
+                           nr_frames > 50; };
     enable_rst = 1'b1;
     enable_gen = 1'b1;
   endfunction

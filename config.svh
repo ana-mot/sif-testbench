@@ -2,13 +2,10 @@ class Configuration;
     rand int unsigned nr_frames;
     rand int unsigned max_delay;
     rand delay_mode_g delay_mode;
-
-    constraint c_frames { nr_frames inside {[1:30]}; }
-    constraint c_delay { max_delay inside {[0:20]}; }
+    rand int n_resets;
     
-    function new();
-        nr_frames = 10;
-        max_delay = 5;
-        delay_mode = MAX_DELAY;
-    endfunction //new()
+    constraint c_reset { soft n_resets inside {[1:100]}; }
+    constraint c_frames { nr_frames inside {[1:1000]}; }
+    constraint c_delay { max_delay inside {[0:20]}; }
+
 endclass //Configuration

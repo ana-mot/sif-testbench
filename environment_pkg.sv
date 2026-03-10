@@ -8,5 +8,6 @@ package environment_pkg;
     `include "driver.svh"
     `include "monitor.svh"
     `include "scoreboard.svh"
+    `include "coverage.svh"
 endpackage
 
