@@ -59,15 +59,18 @@ class BaseTest;
     repeat (cfg.n_resets) begin
       repeat ($urandom_range(5, 10)) @(x.cbd);
 
-      r_if.rst_b <= 1'b0;
+      r_if.rst_b = 1'b0;
       repeat ($urandom_range(1, 3)) @(x.cbd);
-      r_if.rst_b <= 1'b1;
+      r_if.rst_b = 1'b1;
+      -> scb.rst_active;
+      $display("%t evenimentul de reset", $time);
     end
 
   endtask
 
   virtual function void configure();
-    cfg.randomize();
+    //cfg.randomize();
+    if (!cfg.randomize()) $fatal(1, "Randomize failed");
     enable_rst = 1'b0;
     enable_gen = 1'b1;
   endfunction
@@ -113,7 +116,7 @@ class BaseTest;
     
     if (enable_gen) begin
       @gen_done;
-      repeat (5) @(x.cbd);
+      repeat (20) @(x.cbd);
       -> scb.done_p;
       repeat (5) @(x.cbd);
       $finish;
@@ -130,7 +133,8 @@ class SanityTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    cfg.randomize() with { delay_mode == MAX_DELAY; };
+    if (!cfg.randomize() with { delay_mode == MAX_DELAY;
+                           nr_frames > 50; }) $fatal(1, "Randomize failed");
     enable_rst = 1'b0;
     enable_gen = 1'b1;
   endfunction
@@ -143,8 +147,8 @@ class StresTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    cfg.randomize() with { delay_mode == NO_DELAY;
-                           max_delay == 0; };
+    if (!cfg.randomize() with { delay_mode == NO_DELAY;
+                           max_delay == 0; }) $fatal(1, "Randomize failed");
     enable_rst = 1'b0;
     enable_gen = 1'b1;
   endfunction
@@ -158,8 +162,9 @@ class ResetTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    cfg.randomize() with { delay_mode == MAX_DELAY;
-                           max_delay == 5; };
+    if (!cfg.randomize() with { delay_mode == MAX_DELAY;
+                           max_delay == 5;
+                           nr_frames > 50; }) $fatal(1, "Randomize failed");
     enable_rst = 1'b1;
     enable_gen = 1'b1;
   endfunction
@@ -172,9 +177,9 @@ class TrafficMixtTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    cfg.randomize() with { delay_mode == MIXT;
+    if (!cfg.randomize() with { delay_mode == MIXT;
                            max_delay == 4;
-                           nr_frames > 50; };
+                           }) $fatal(1, "Randomize failed");
     enable_rst = 1'b1;
     enable_gen = 1'b1;
   endfunction

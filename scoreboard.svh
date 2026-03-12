@@ -7,6 +7,7 @@ class Scoreboard;
     mailbox w_expected_mbx;
 
     event done_p;
+    event rst_active;
 
     function new(mailbox x_msg_mbx, mailbox x_actual_mbx, mailbox w_actual_mbx);
         this.x_msg_mbx = x_msg_mbx;
@@ -19,6 +20,21 @@ class Scoreboard;
     function automatic logic [15:0] calc_read_data(logic [15:0] addr);
         calc_read_data = { addr[15:9], (addr[8] ^ addr[4]), (addr[7] ^ addr[5]), addr[6:0] };
     endfunction
+
+    task empty_exp();
+    forever begin
+        Transaction tr_in;
+        @rst_active;
+        while (x_expected_mbx.try_get(tr_in))begin
+            $display("%t a fost golit x_expected", $time);
+            tr_in.display();
+        end
+        while (w_expected_mbx.try_get(tr_in))begin
+             $display("%t a fost golit w_expected", $time);
+            tr_in.display();
+        end
+    end
+    endtask
 
     task ref_dut_run();
         forever begin
@@ -40,12 +56,15 @@ class Scoreboard;
             tr_exp.data = tr_in.data;
             w_expected_mbx.put(tr_exp); // se trimite in Wexpected
         end
+
+        
         end
+        
     endtask
 
     task x_compare_run();
         forever begin
-        Transaction act, exp;        
+        Transaction act, exp;
 
         do begin
             x_actual_mbx.get(act);
@@ -66,6 +85,7 @@ class Scoreboard;
     task w_compare_run();
         forever begin
         Transaction act, exp;
+
         w_actual_mbx.get(act);
         $display("@%0t scot actual pentru w_comp = %h", $time, act.addr);
 
@@ -83,6 +103,7 @@ class Scoreboard;
     endtask
 
     task check_empty();
+        Transaction tr;
         @done_p;
         if(x_msg_mbx.num() == 0 && x_actual_mbx.num() == 0 && w_actual_mbx.num() == 0 && x_expected_mbx.num() == 0 && w_expected_mbx.num() == 0) begin
             $display("@%0t [Scoreboard] mailbox-uri goale", $time);
@@ -98,6 +119,7 @@ class Scoreboard;
         ref_dut_run();
         x_compare_run();
         w_compare_run();
+        empty_exp();
         check_empty();
         join_none
     endtask

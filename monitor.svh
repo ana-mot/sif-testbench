@@ -6,7 +6,7 @@ class Monitor;
     mailbox actual_mbx; //pt comparator(X sau W)
 
     logic [15:0] read_addr_q[$]; //adrese de read in asteptare
-
+    
     function new(virtual xw_if.MONITOR vif, string name = "MON", mailbox msg_mbx, mailbox actual_mbx);
         this.vif = vif;
         this.name = name;
@@ -23,7 +23,7 @@ class Monitor;
             if (vif.cbm.wr_s) begin
                 tr = new();
                 tr.d = WRITE;
-                tr.addr = vif.cbm.addr;
+                tr.addr = vif.cbm.addr; 
                 tr.data = vif.cbm.data_wr; 
                 $display("@%0t WRITE pe [%s]", $time, name);
                 tr.display();
@@ -44,7 +44,7 @@ class Monitor;
                 if (msg_mbx != null) msg_mbx.put(tr); 
                 $display("@%0t trimit msg rd pentru ref_dut", $time);
                 actual_mbx.put(tr); //merge la comparator
-                $display("@%0ttrimit actual rd", $time);
+                $display("@%0t trimit actual rd", $time);
             end
 
             if (vif.cbm.rd_s) begin
