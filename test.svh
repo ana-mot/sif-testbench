@@ -179,7 +179,7 @@ class TrafficMixtTest extends BaseTest;
   virtual function void configure();
     if (!cfg.randomize() with { delay_mode == MIXT;
                            max_delay == 4;
-                           }) $fatal(1, "Randomize failed");
+                           nr_frames > 50;}) $fatal(1, "Randomize failed");
     enable_rst = 1'b1;
     enable_gen = 1'b1;
   endfunction
