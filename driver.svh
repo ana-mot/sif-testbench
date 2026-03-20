@@ -4,9 +4,11 @@ event drv_done;
 mailbox drv_mbx;
 
 
-function new(virtual xw_if.TB vif);
-    this.vif = vif; 
-endfunction //new()
+function new(virtual xw_if.TB vif, mailbox drv_mbx, event drv_done);
+    this.vif = vif;
+    this.drv_mbx = drv_mbx;
+    this.drv_done = drv_done;
+endfunction
 
 task run();
     Transaction tr;

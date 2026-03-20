@@ -1,5 +1,6 @@
 `timescale 1ps/1ps
 
+`include "environment.svh"
 import environment_pkg::*;
 
 class BaseTest;
@@ -9,23 +10,7 @@ class BaseTest;
   virtual xw_if.MONITOR wm;
   virtual reset_if r_if;
 
-  bit enable_rst = 1'b0;
-  bit enable_gen = 1'b1;
-
-  Monitor mon_x, mon_w;
-  Driver drv;
-  Transaction tr;
-  Generator gen;
-  Scoreboard scb;
-  Configuration cfg;
-  Coverage cov;
-
-  mailbox drv_mbx;
-  event drv_done;
-  event gen_done;
-
-  mailbox x_msg_mbx, x_actual_mbx, w_actual_mbx;
-
+  Environment env;
 
   function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
     this.x  = x;
@@ -34,93 +19,29 @@ class BaseTest;
     this.r_if = r_if;
   endfunction
 
-  task init();
-    x.cbd.wr_s <= 1'b0;
-    x.cbd.rd_s <= 1'b0;
-    x.cbd.addr <= '0;
-    x.cbd.data_wr <= '0;
-  endtask
-
-  task initial_reset();
-    r_if.rst_b <= 1'b0;
-    init();
-
-    repeat (2) @(x.cbd);
-
-    r_if.rst_b <= 1'b1;
-    wait (r_if.rst_b == 1'b1);
-
-    @(x.cbd);
-  endtask
-
-  task reset_run();
-    wait (r_if.rst_b == 1'b1);
-
-    repeat (cfg.n_resets) begin
-      repeat ($urandom_range(5, 10)) @(x.cbd);
-
-      r_if.rst_b = 1'b0;
-      repeat ($urandom_range(1, 3)) @(x.cbd);
-      r_if.rst_b = 1'b1;
-      -> scb.rst_active;
-      $display("%t evenimentul de reset", $time);
-    end
-
-  endtask
 
   virtual function void configure();
-    //cfg.randomize();
-    if (!cfg.randomize()) $fatal(1, "Randomize failed");
-    enable_rst = 1'b0;
-    enable_gen = 1'b1;
+    if (!env.cfg.randomize()) $fatal(1, "Randomize failed");
+    env.enable_rst = 1'b0;
+    env.enable_gen = 1'b1;
   endfunction
 
   virtual task run();
-    drv_mbx = new();
-    x_msg_mbx = new();
-    x_actual_mbx = new();
-    w_actual_mbx = new();
 
-    mon_x = new(xm, "X_IF",x_msg_mbx, x_actual_mbx);
-    mon_w = new(wm, "W_IF", null, w_actual_mbx);
-
-    cov = new(xm);
-    
-    cfg = new();
-    drv = new(x);
-    gen = new(cfg, x);
-    gen.gen_done = gen_done;
-
-    scb = new(x_msg_mbx, x_actual_mbx, w_actual_mbx);
+    env = new(x,xm,wm,r_if);
+    env.build();
 
     configure();
 
-    initial_reset();
+    env.run();
 
-    gen.drv_mbx = drv_mbx;
-    drv.drv_mbx = drv_mbx;
-
-    gen.drv_done = drv_done;
-    drv.drv_done = drv_done;
-
-    fork
-      if (enable_gen) gen.run();
-      if (enable_gen) drv.run();
-      mon_x.run();
-      mon_w.run();
-      scb.run();
-      cov.run();
-      if(enable_rst) reset_run();
-    join_none
-
-    
-    if (enable_gen) begin
-      @gen_done;
-      repeat (20) @(x.cbd);
-      -> scb.done_p;
-      repeat (5) @(x.cbd);
-      $finish;
-    end 
+  if(env.enable_gen) begin
+    @env.gen_done;
+    repeat(20) @(x.cbd);
+    -> env.scb.done_p;
+    repeat(5) @(x.cbd);
+    $finish;
+  end
   endtask
 
 endclass
@@ -128,29 +49,31 @@ endclass
 // ------------------------------------------------------------
 
 class SanityTest extends BaseTest;
+
   function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
     super.new(x, xm, wm, r_if);
   endfunction
 
   virtual function void configure();
-    if (!cfg.randomize() with { delay_mode == MAX_DELAY;
+    if (!env.cfg.randomize() with { delay_mode == MAX_DELAY;
                            nr_frames > 50; }) $fatal(1, "Randomize failed");
-    enable_rst = 1'b0;
-    enable_gen = 1'b1;
+    env.enable_rst = 1'b0;
+    env.enable_gen = 1'b1;
   endfunction
 endclass
 
 // ------------------------------------------------------------
 class StresTest extends BaseTest;
+
   function new(virtual xw_if.TB x, virtual xw_if.MONITOR xm, virtual xw_if.MONITOR wm, virtual reset_if r_if);
     super.new(x, xm, wm, r_if);
   endfunction
 
   virtual function void configure();
-    if (!cfg.randomize() with { delay_mode == NO_DELAY;
+    if (!env.cfg.randomize() with { delay_mode == NO_DELAY;
                            max_delay == 0; }) $fatal(1, "Randomize failed");
-    enable_rst = 1'b0;
-    enable_gen = 1'b1;
+    env.enable_rst = 1'b0;
+    env.enable_gen = 1'b1;
   endfunction
 endclass
 
@@ -162,11 +85,11 @@ class ResetTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    if (!cfg.randomize() with { delay_mode == MAX_DELAY;
+    if (!env.cfg.randomize() with { delay_mode == MAX_DELAY;
                            max_delay == 5;
                            nr_frames > 50; }) $fatal(1, "Randomize failed");
-    enable_rst = 1'b1;
-    enable_gen = 1'b1;
+    env.enable_rst = 1'b1;
+    env.enable_gen = 1'b1;
   endfunction
 endclass
 
@@ -177,11 +100,11 @@ class TrafficMixtTest extends BaseTest;
   endfunction
 
   virtual function void configure();
-    if (!cfg.randomize() with { delay_mode == MIXT;
+    if (!env.cfg.randomize() with { delay_mode == MIXT;
                            max_delay == 4;
                            nr_frames > 50;}) $fatal(1, "Randomize failed");
-    enable_rst = 1'b1;
-    enable_gen = 1'b1;
+    env.enable_rst = 1'b1;
+    env.enable_gen = 1'b1;
   endfunction
 endclass
 
@@ -285,8 +208,8 @@ class ManualTest extends BaseTest;
 
   virtual function void configure();
     super.configure();
-    enable_gen = 1'b0;
-    enable_rst = 1'b0;
+    env.enable_gen = 1'b0;
+    env.enable_rst = 1'b0;
   endfunction
 
   task run();
@@ -310,7 +233,7 @@ class ManualTest extends BaseTest;
     reset_with_rd_wr();
     repeat (10) @(x.cbd);
 
-    -> scb.done_p;
+    -> env.scb.done_p;
     repeat (5) @(x.cbd);
     $finish;
   endtask

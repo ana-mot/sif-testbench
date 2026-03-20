@@ -6,10 +6,13 @@ class Generator;
   Configuration cfg;
   virtual xw_if.TB vif;
 
-  function new(Configuration cfg=null, virtual xw_if.TB vif);
+  function new(Configuration cfg, virtual xw_if.TB vif, mailbox drv_mbx, event drv_done, event gen_done);
     this.cfg = cfg;
-	this.vif = vif;
-  endfunction
+    this.vif = vif;
+    this.drv_mbx = drv_mbx;
+    this.drv_done = drv_done;
+    this.gen_done = gen_done;
+endfunction
 
   task run();
     Transaction tr;
