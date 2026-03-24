@@ -35,6 +35,8 @@ task run();
 
         end
 
+        tr.display("DRVIVER");
+
         @(vif.cbd);
             vif.cbd.wr_s <= 1'b0;
             vif.cbd.rd_s <= 1'b0;

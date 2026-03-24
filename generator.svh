@@ -23,7 +23,8 @@ endfunction
     repeat(cfg.nr_frames) begin
       tr = new();
       if( !tr.randomize() ) $fatal("Gen:: trans randomization failed");
-      $display ("T=%0t [Generator] created an item d=%s addr=%h data=%h", $time, tr.d.name(), tr.addr, tr.data);
+      $display("--------------------------------------------------");
+      tr.display("GENERATOR");
       drv_mbx.put(tr);
       @(drv_done);
 

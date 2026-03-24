@@ -38,10 +38,42 @@ assign w_if.rst_b = r_if.rst_b;
   end
 
   initial begin
-    t = TrafficMixtTest::new(x_if, x_if, w_if, r_if);
-    //t = new(x_if, x_if, w_if, r_if);
-    t.run();
-  end
+  string testname;
+
+  if (!$value$plusargs("TEST=%s", testname))
+    testname = "BaseTest";
+
+  $display("TEST SELECTAT = %s", testname);
+
+  case (testname)
+
+    "BaseTest":
+      t = BaseTest::new(x_if, x_if, w_if, r_if);
+
+    "SanityTest":
+      t = SanityTest::new(x_if, x_if, w_if, r_if);
+
+    "StresTest":
+      t = StresTest::new(x_if, x_if, w_if, r_if);
+
+    "ResetTest":
+      t = ResetTest::new(x_if, x_if, w_if, r_if);
+
+    "TrafficMixtTest":
+      t = TrafficMixtTest::new(x_if, x_if, w_if, r_if);
+
+    "ManualTest":
+      t = ManualTest::new(x_if, x_if, w_if, r_if);
+
+    default: begin
+      $display("Test necunoscut: %s", testname);
+      $finish;
+    end
+
+  endcase
+
+  t.run();
+end
 
 endmodule
 

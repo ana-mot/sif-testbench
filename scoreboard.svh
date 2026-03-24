@@ -75,9 +75,9 @@ class Scoreboard;
         $display("@%0t scot expected din ref pentru x_comp = %h", $time, exp.addr);
 
         if (act.addr != exp.addr | act.data != exp.data) begin
-            $display("@%0t [XCOMPARE] FAIL addr act=%h exp=%h data act=%h exp=%h", $time, act.addr, exp.addr, act.data, exp.data);
+            $display("@%0t [SCB] [XCOMPARE] FAIL addr act=%h exp=%h data act=%h exp=%h", $time, act.addr, exp.addr, act.data, exp.data);
         end else begin
-            $display("@%0t [XCOMPARE] PASS addr=%h data=%h", $time, act.addr, act.data);
+            $display("@%0t [SCB] [XCOMPARE] PASS addr=%h data=%h", $time, act.addr, act.data);
         end
         end
     endtask
@@ -95,9 +95,9 @@ class Scoreboard;
         if (act.d != WRITE) $error("@%0t Non write ", $time); 
 
         if (act.addr != exp.addr | act.data != exp.data) begin
-            $display("@%0t [WCOMPARE] FAIL addr act=%h exp=%h data act=%h exp=%h", $time, act.addr, exp.addr, act.data, exp.data);
+            $display("@%0t [SCB] [WCOMPARE] FAIL addr act=%h exp=%h data act=%h exp=%h", $time, act.addr, exp.addr, act.data, exp.data);
         end else begin
-            $display("@%0t [WCOMPARE] PASS addr=%h data=%h", $time, act.addr, act.data);
+            $display("@%0t [SCB] [WCOMPARE] PASS addr=%h data=%h", $time, act.addr, act.data);
         end
         end
     endtask

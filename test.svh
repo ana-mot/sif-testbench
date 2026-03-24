@@ -21,10 +21,27 @@ class BaseTest;
 
 
   virtual function void configure();
-    if (!env.cfg.randomize()) $fatal(1, "Randomize failed");
-    env.enable_rst = 1'b0;
-    env.enable_gen = 1'b1;
-  endfunction
+
+  int frames, delay, resets;
+
+  if (!env.cfg.randomize())
+    $fatal(1, "Randomize failed");
+
+  if ($value$plusargs("FRAMES=%d", frames))
+    env.cfg.nr_frames = frames;
+
+  if ($value$plusargs("DELAY=%d", delay))
+    env.cfg.max_delay = delay;
+
+  if ($value$plusargs("RESETS=%d", resets))
+    env.cfg.n_resets = resets;
+
+  env.enable_rst = 1'b0;
+  env.enable_gen = 1'b1;
+
+  $display("CONFIG: frames=%0d delay=%0d resets=%0d", env.cfg.nr_frames, env.cfg.max_delay, env.cfg.n_resets);
+
+endfunction
 
   virtual task run();
 
@@ -57,6 +74,9 @@ class SanityTest extends BaseTest;
   virtual function void configure();
     if (!env.cfg.randomize() with { delay_mode == MAX_DELAY;
                            nr_frames > 50; }) $fatal(1, "Randomize failed");
+
+    super.configure();
+
     env.enable_rst = 1'b0;
     env.enable_gen = 1'b1;
   endfunction
@@ -72,6 +92,8 @@ class StresTest extends BaseTest;
   virtual function void configure();
     if (!env.cfg.randomize() with { delay_mode == NO_DELAY;
                            max_delay == 0; }) $fatal(1, "Randomize failed");
+    super.configure();
+    
     env.enable_rst = 1'b0;
     env.enable_gen = 1'b1;
   endfunction
@@ -88,6 +110,8 @@ class ResetTest extends BaseTest;
     if (!env.cfg.randomize() with { delay_mode == MAX_DELAY;
                            max_delay == 5;
                            nr_frames > 50; }) $fatal(1, "Randomize failed");
+    super.configure();
+    
     env.enable_rst = 1'b1;
     env.enable_gen = 1'b1;
   endfunction
@@ -103,6 +127,8 @@ class TrafficMixtTest extends BaseTest;
     if (!env.cfg.randomize() with { delay_mode == MIXT;
                            max_delay == 4;
                            nr_frames > 50;}) $fatal(1, "Randomize failed");
+    super.configure();
+    
     env.enable_rst = 1'b1;
     env.enable_gen = 1'b1;
   endfunction

@@ -25,8 +25,7 @@ class Monitor;
                 tr.d = WRITE;
                 tr.addr = vif.cbm.addr; 
                 tr.data = vif.cbm.data_wr; 
-                $display("@%0t WRITE pe [%s]", $time, name);
-                tr.display();
+                $display("@%0t [MONITOR %s] Tranzactia este de tip=%s cu addr=%h si data=%h", $time, name, tr.d.name(), tr.addr, tr.data);
 
                 if (msg_mbx != null) msg_mbx.put(tr); //x msg merge la ref_dut
                 $display("@%0t trimit msg wr pentru ref_dut", $time);
@@ -39,8 +38,7 @@ class Monitor;
                 tr.d = READ;
                 tr.addr = read_addr_q.pop_front();          
                 tr.data = vif.cbm.data_rd;
-                $display("@%0t READ pe [%s]", $time, name);
-                tr.display();
+                $display("@%0t [MONITOR %s] Tranzactia este de tip=%s cu addr=%h si data=%h", $time, name, tr.d.name(), tr.addr, tr.data);
                 if (msg_mbx != null) msg_mbx.put(tr); 
                 $display("@%0t trimit msg rd pentru ref_dut", $time);
                 actual_mbx.put(tr); //merge la comparator
@@ -49,7 +47,7 @@ class Monitor;
 
             if (vif.cbm.rd_s) begin
                 read_addr_q.push_back(vif.cbm.addr); //consider read request 
-                $display("@%0t se cere read", $time);
+                //$display("@%0t se cere read", $time);
             end
         end else begin
             read_addr_q.delete();

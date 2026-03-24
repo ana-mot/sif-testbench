@@ -4,7 +4,8 @@ transcript file transcript
 
 
 vlog +cover=f -sv -f filelist.f
-vsim -voptargs="+acc" -coverage +UVM_VERBOSITY=UVM_MEDIUM work.tb_sif
+
+vsim -voptargs="+acc" -coverage work.tb_sif +TEST=$TEST +FRAMES=$FRAMES +DELAY=$DELAY +RESETS=$RESETS
 
 onerror {resume}
 quietly WaveActivateNextPane {} 0

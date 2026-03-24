@@ -75,12 +75,12 @@ task build();
 
     cfg = new();
 
-    mon_x = new(xm, "X_IF", x_msg_mbx, x_actual_mbx);
-    mon_w = new(wm, "W_IF", null, w_actual_mbx);
+    gen = new(cfg, x, drv_mbx, drv_done, gen_done);
 
     drv = new(x, drv_mbx, drv_done);
-    
-    gen = new(cfg, x, drv_mbx, drv_done, gen_done);
+
+    mon_x = new(xm, "X_IF", x_msg_mbx, x_actual_mbx);
+    mon_w = new(wm, "W_IF", null, w_actual_mbx);
 
     scb = new(x_msg_mbx, x_actual_mbx, w_actual_mbx);
 
